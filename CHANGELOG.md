@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Breaking changes within the 0.x line are called out explicitly.
 
+## [Unreleased]
+
+### Fixed
+
+- **Yahoo news window is UTC and end-exclusive.** The upper bound was inclusive,
+  so an article stamped exactly midnight after `end_date` leaked into a
+  historical run; flat epoch timestamps were also parsed in host-local time and
+  offset-aware stamps had `tzinfo` stripped without converting, making filtering
+  machine-dependent. Every operand is normalized to UTC over a half-open
+  `[start, end + 1 day)` window. (#1126)
+- **Same-day OHLCV cache refreshes.** The per-day cache was reused
+  unconditionally, so a run started before the day's bar was final served that
+  snapshot to every later run, feeding a stale close into technical analysis. A
+  present row is not sufficient either, since Yahoo publishes a partial intraday
+  candle, so a TTL now governs every current-day cache while historical caches
+  stay immutable. (#1150)
+- **Unusable terminals report a cause, not a traceback.** Windows terminals
+  without a console buffer raised `NoConsoleScreenBufferError` before the first
+  prompt; the CLI now explains the problem, and the Windows-only import is gated
+  on `sys.platform` so a broken `prompt_toolkit` still surfaces there. (#1138)
+- **Schema-only structured agents stop priming tool calls.**
+  `with_structured_output` binds a single tool (the schema), so a primed model
+  emitted an unknown `web_search` call and the attempt was discarded for a
+  free-text retry, costing an extra round trip and the typed output. (#1130)
+
 ## [0.3.1] — 2026-07-05
 
 Correctness and stability patch: data look-ahead, graph-router crash-safety,
@@ -433,6 +458,10 @@ PRs from late 2025 also landed here.
   portfolio manager. LangGraph orchestration, yfinance data, per-agent
   BM25 memory, single-provider OpenAI integration, interactive CLI.
 
+[Unreleased]: https://github.com/TauricResearch/TradingAgents/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/TauricResearch/TradingAgents/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/TauricResearch/TradingAgents/compare/v0.2.5...v0.3.0
+[0.2.5]: https://github.com/TauricResearch/TradingAgents/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/TauricResearch/TradingAgents/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/TauricResearch/TradingAgents/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/TauricResearch/TradingAgents/compare/v0.2.1...v0.2.2
